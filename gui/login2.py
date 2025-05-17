@@ -6,6 +6,7 @@ import sys
 
 
 def pwd_verify(user, password):
+    global data
     url = "https://passport.100tal.com/v1/web/login/pwd"
     headers = {
         'ver-num': '1.13.03',
@@ -23,9 +24,27 @@ def pwd_verify(user, password):
     response = requests.post(url, data=data, headers=headers)
     json_response = response.json()
     if json_response['errcode'] == 0:
+        data = login(json_response['data'])
         return {'success': True,
-                'data': json_response['data'],
-                'msg': json_response['errmsg']
+                'msg': json_response['errmsg'],
+                }
+    url = "https://course-api-online.saasp.vdyoo.com/passport/v1/login/student/password"
+    data = {
+        'account': user,
+        'password': password,
+        'deviceId': "TAL",
+        'clientId': "523601"
+    }
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        json_response = response.json()
+        data = {
+            'success': True,
+            'hb_token': json_response['hb_token'],
+            'pu_uid': json_response['pu_uid'],
+        }
+        return {'success': True,
+                'msg': "请求成功"
                 }
     return {'success': False,
             'msg': json_response['errmsg']
@@ -61,10 +80,9 @@ def login2(username, password):
         }
 
     def next_step():
-        global result_submit, exitbool
+        global result_submit, exitbool, data
         exitbool = False
         root.destroy()
-        data = login(login_result['data'])
         result_submit = {
             'success': True,
             'data': data,
