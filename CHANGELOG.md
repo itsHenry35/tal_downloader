@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.4.0](https://github.com/itsHenry35/ledu/compare/v2.3.1...v2.4.0) (2025-05-18)
+
+
+### Features
+
+* 支持学员编号登录 ([c2b0c3b](https://github.com/itsHenry35/ledu/commit/c2b0c3bf886513c0a72d86716077bbbf95db5604))
+
+
+### Bug Fixes
+
+* 增加SMALL_CLASS_MODE ([a70c368](https://github.com/itsHenry35/ledu/commit/a70c368fb31cf73cad9b3232da428d5ef9a035c2))
+
 ## [2.3.1](https://github.com/itsHenry35/ledu/compare/v2.3.0...v2.3.1) (2025-01-21)
 
 
