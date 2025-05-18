@@ -97,7 +97,7 @@ def get_download_url(lecture, user_id, access_token):
     video_url = ""
     error_message = ""
     success = False
-    if live_type in ('SMALL_GROUPS_V2_MODE', 'COMBINE_SMALL_CLASS_MODE'):
+    if live_type in ('SMALL_GROUPS_V2_MODE', 'COMBINE_SMALL_CLASS_MODE', 'SMALL_CLASS_MODE'):
         url = 'https://classroom-api-online.saasp.vdyoo.com/playback/v1/video/init'
         response = requests.get(url, headers=headers)
         video_data = response.json()
