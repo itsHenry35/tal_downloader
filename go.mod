@@ -1,6 +1,6 @@
 module github.com/itsHenry35/tal_downloader
 
-go 1.24.4
+go 1.20
 
 require fyne.io/fyne/v2 v2.6.1
 
