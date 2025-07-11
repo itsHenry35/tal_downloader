@@ -11,7 +11,6 @@ import (
 
 func main() {
 	myApp := app.New()
-	myApp.Settings().SetTheme(&ui.CustomTheme{})
 
 	// 安卓平台启动时清理临时文件夹
 	if utils.IsAndroid() {
