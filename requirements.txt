@@ -1,5 +1,0 @@
-requests
-tk
-ttkbootstrap
-aria2p
-sentry-sdk

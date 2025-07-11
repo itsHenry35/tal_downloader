@@ -1,3 +1,47 @@
-config.yaml
-乐读-下载
-*/__pycache__/
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Build output
+tal_downloader
+tal_downloader.app
+tal_downloader.apk
+*.apk
+
+# Fyne bundle
+bundled.go
+fyne-cross/
+
+# Downloaded videos
+乐读-下载/
+学而思培优-下载/
+
+# IDE specific files
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Application data
+Icon.png
+
+# Debugging files
+__debug*
