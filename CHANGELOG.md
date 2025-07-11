@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.0.0](https://github.com/itsHenry35/tal_downloader/compare/v2.4.0...v3.0.0) (2025-07-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* adapt to go build
+* Rewrite with Go and support 学而思培优 and Android
+
+### Features
+
+* Rewrite with Go and support 学而思培优 and Android ([cd27687](https://github.com/itsHenry35/tal_downloader/commit/cd27687f581487e54b18e05e1b4f8d1ec5fda02b))
+
+
+### Continuous Integration
+
+* adapt to go build ([6f2734b](https://github.com/itsHenry35/tal_downloader/commit/6f2734bb49cc7c58d76e97f9d13cfe43ccf2bc04))
+
 ## [2.4.0](https://github.com/itsHenry35/ledu/compare/v2.3.1...v2.4.0) (2025-05-18)
 
 
