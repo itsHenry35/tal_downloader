@@ -10,146 +10,159 @@ on:
   workflow_dispatch:
 
 jobs:
-
-  Build_Windows:
-    runs-on: windows-latest
-
+  Build_Linux_Windows:
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-          
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.8.10
-         
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
-          
-      
-      - name: Build and rename the artifact
-        run: |
-          pyinstaller --noconfirm --onefile --console --icon "ledu.ico" --add-data "bin/aria2c_win32_x64.exe;bin/" --add-data "bin/aria2_win32.conf;bin/"  "main.py"
-          $SHORT_COMMIT_ID = $env:GITHUB_SHA.Substring(0,7)
-          if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
-            $FILENAME = "ledu_download_win64_PR_$($SHORT_COMMIT_ID).exe"
-          } else {
-            $FILENAME = "ledu_download_win64_$($SHORT_COMMIT_ID).exe"
-          }
-          ren .\dist\main.exe $FILENAME
-          
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: "Windows-build"
-          path: "D:\\a\\ledu\\ledu\\dist"
-          
-  Build_Linux:
-    runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
-          
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          python-version: 3.12.3
-         
-      - name: Install Dependencies
+          go-version: '1.20'
+
+      - name: Install fyne
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Install UPX
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
-          
-      
-      - name: Build and rename the artifact
+          sudo apt-get update
+          sudo apt-get install -y upx
+
+      - name: Install dependencies
         run: |
-          pyinstaller --noconfirm --onefile --console --icon "ledu.ico" --add-data "bin/aria2c_linux_x64:bin/" --add-data "bin/aria2_linux.conf:bin/" "main.py"
+          sudo apt-get install -y gcc-multilib
+          sudo apt-get install -y gcc-mingw-w64
+
+      - name: Build Linux AMD64
+        run: |
           SHORT_COMMIT_ID=${GITHUB_SHA::7}
           if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
             FILENAME=ledu_download_linux_amd64_pr_$SHORT_COMMIT_ID
           else
             FILENAME=ledu_download_linux_amd64_$SHORT_COMMIT_ID
-          fi            
-          mv dist/main dist/$FILENAME          
-          
-      - name: Upload
+          fi
+          fyne package --target linux --name $FILENAME
+          upx --best $FILENAME
+
+      - name: Build Windows
+        env:
+          CGO_ENABLED: 1
+          CC: x86_64-w64-mingw32-gcc
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          SHORT_COMMIT_ID=${GITHUB_SHA::7}
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            FILENAME=ledu_download_win64_PR_$SHORT_COMMIT_ID.exe
+          else
+            FILENAME=ledu_download_win64_$SHORT_COMMIT_ID.exe
+          fi
+          fyne package --target windows --name $FILENAME
+          upx --best $FILENAME
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: "Linux-build"
-          path: "/home/runner/work/ledu/ledu/dist"
+          name: "Linux-Windows-build"
+          path: |
+            ledu_download_linux_amd64_*
+            ledu_download_win64_*.exe
 
-  Build_Macos_Silicon:
+  Build_MacOS_ARM64_Android:
     runs-on: macos-latest
-
     steps:
       - uses: actions/checkout@v4
-          
-      - name: Set up Python
-        uses: actions/setup-python@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          python-version: 3.12.6
-         
-      - name: Install Dependencies
+          go-version: '1.20'
+
+      - name: Install fyne
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Install UPX
+        run: brew install upx
+
+      - name: Setup Android SDK and NDK
+        uses: android-actions/setup-android@v2
+
+      - name: Set Android Environment Variables
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
-          
-      
-      - name: Build and compress the artifact
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
+
+      - name: Build macOS ARM64
         run: |
-          pyinstaller --noconfirm --onefile --console --icon "ledu.ico" --add-data "bin/aria2c_darwin_arm64:bin/" --add-data "bin/aria2_darwin.conf:bin/" "main.py"
           SHORT_COMMIT_ID=${GITHUB_SHA::7}
           if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
             FILENAME=ledu_download_macos_arm64_pr_$SHORT_COMMIT_ID
           else
             FILENAME=ledu_download_macos_arm64_$SHORT_COMMIT_ID
-          fi             
-          mv dist/main dist/$FILENAME
-          
-      - name: Upload
+          fi
+          fyne package --target darwin --name $FILENAME.app
+          upx --best $FILENAME.app/Contents/MacOS/* || true
+          zip -r -X $FILENAME.zip $FILENAME.app
+
+      - name: Build Android ARM64
+        run: |
+          SHORT_COMMIT_ID=${GITHUB_SHA::7}
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            FILENAME=ledu_download_android_arm64_pr_$SHORT_COMMIT_ID.apk
+          else
+            FILENAME=ledu_download_android_arm64_$SHORT_COMMIT_ID.apk
+          fi
+          fyne package --target android/arm64 --name $FILENAME
+
+      - name: Build Android ARM
+        run: |
+          SHORT_COMMIT_ID=${GITHUB_SHA::7}
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            FILENAME=ledu_download_android_arm_pr_$SHORT_COMMIT_ID.apk
+          else
+            FILENAME=ledu_download_android_arm_$SHORT_COMMIT_ID.apk
+          fi
+          fyne package --target android/arm --name $FILENAME
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: "MacOs-build-Arm64"
-          path: "/Users/runner/work/ledu/ledu/dist/"
+          name: "MacOS-ARM64-Android-build"
+          path: |
+            ledu_download_macos_arm64_*.zip
+            ledu_download_android_arm64_*.apk
+            ledu_download_android_arm_*.apk
 
-
-
-  Build_Macos_Intel:
+  Build_MacOS_Intel:
     runs-on: macos-13
-
     steps:
       - uses: actions/checkout@v4
-          
-      - name: Set up Python
-        uses: actions/setup-python@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          python-version: 3.12.6
-         
-      - name: Install Dependencies
+          go-version: '1.21'
+
+      - name: Install fyne
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Install UPX
+        run: brew install upx
+
+      - name: Build macOS x86_64
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
-          
-      
-      - name: Build and compress the artifact
-        run: |
-          pyinstaller --noconfirm --onefile --console --icon "/Users/runner/work/ledu/ledu/ledu.ico" --add-data "/Users/runner/work/ledu/ledu/bin/aria2c_darwin_x64:bin/" --add-data "/Users/runner/work/ledu/ledu/bin/aria2_darwin.conf:bin/" "/Users/runner/work/ledu/ledu/main.py"
           SHORT_COMMIT_ID=${GITHUB_SHA::7}
           if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
             FILENAME=ledu_download_macos_x86_64_pr_$SHORT_COMMIT_ID
           else
             FILENAME=ledu_download_macos_x86_64_$SHORT_COMMIT_ID
-          fi             
-          mv dist/main dist/$FILENAME
-          
-      - name: Upload
+          fi
+          fyne package --target darwin --name $FILENAME.app
+          upx --best $FILENAME.app/Contents/MacOS/* || true
+          zip -r -X $FILENAME.zip $FILENAME.app
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: "MacOs-build-x86_64"
-          path: "/Users/runner/work/ledu/ledu/dist/"
-
+          name: "MacOS-x86_64-build"
+          path: ledu_download_macos_x86_64_*.zip
