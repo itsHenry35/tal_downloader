@@ -5,7 +5,7 @@ on:
     types: [published]
 
 jobs:
-  Build_Linux_Windows:
+  Build_Linux:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -14,9 +14,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.20'
-
-      - name: Install fyne
-        run: go install fyne.io/tools/cmd/fyne@latest
 
       - name: Install system dependencies
         run: |
@@ -33,32 +30,33 @@ jobs:
             libxxf86vm-dev \
             pkg-config
 
-      - name: Install UPX
+      - name: Update version info
         run: |
-          sudo apt-get update
-          sudo apt-get install -y upx
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get install -y gcc-multilib
-          sudo apt-get install -y gcc-mingw-w64
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          # 替换 constants.go 文件中的版本信息
+          sed -i "s/const Version = \"Debug\"/const Version = \"$VERSION\"/" constants/constants.go
+          sed -i "s/const BuildTime = \"Unknown\"/const BuildTime = \"$BUILD_TIME\"/" constants/constants.go
+          
+          # 显示替换后的内容以便调试
+          echo "Updated constants.go:"
+          cat constants/constants.go
 
       - name: Build Linux AMD64
         env:
           CGO_ENABLED: 1
-        run: |
-          fyne package --target linux --name tal_downloader_linux_amd64_${{ github.event.release.tag_name }} --release
-          upx --best tal_downloader_linux_amd64_${{ github.event.release.tag_name }}
-
-      - name: Build Windows
-        env:
-          CGO_ENABLED: 1
-          CC: x86_64-w64-mingw32-gcc
-          GOOS: windows
+          GOOS: linux
           GOARCH: amd64
         run: |
-          fyne package --target windows --name tal_downloader_win64_${{ github.event.release.tag_name }}.exe --release
-          upx --best tal_downloader_win64_${{ github.event.release.tag_name }}.exe
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          APPNAME=temp_linux_build
+          FINAL_FILENAME=tal_downloader_linux_amd64_$TAG_NAME
+          
+          go build -ldflags="-s -w" -o $APPNAME
+          mv $APPNAME $FINAL_FILENAME
 
       - name: Release Linux
         uses: svenstaro/upload-release-action@v2
@@ -67,6 +65,68 @@ jobs:
           release_name: ${{ github.event.release.tag_name }}
           overwrite: true
           file: tal_downloader_linux_amd64_${{ github.event.release.tag_name }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: "Linux-build"
+          path: |
+            tal_downloader_linux_amd64_${{ github.event.release.tag_name }}
+
+  Build_Windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+
+      - name: Install fyne
+        run: go install fyne.io/tools/cmd/fyne@latest
+
+      - name: Update version info
+        shell: bash
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          # Windows 下的 sed 替换
+          sed -i "s/const Version = \"Debug\"/const Version = \"$VERSION\"/" constants/constants.go
+          sed -i "s/const BuildTime = \"Unknown\"/const BuildTime = \"$BUILD_TIME\"/" constants/constants.go
+          
+          # 显示替换后的内容以便调试
+          echo "Updated constants.go:"
+          cat constants/constants.go
+
+      - name: Build Windows
+        env:
+          CGO_ENABLED: 1
+          GOOS: windows
+          GOARCH: amd64
+        shell: bash
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          APPNAME="好未来课程下载器"
+          FINAL_FILENAME=tal_downloader_win64_$TAG_NAME.exe
+          
+          fyne package --target windows --name "$APPNAME" --app-id com.itshenry.tal_downloader --app-version "$VERSION" --release
+          # 查找生成的exe文件并重命名
+          if [ -f "$APPNAME.exe" ]; then
+            mv "$APPNAME.exe" "$FINAL_FILENAME"
+          else
+            EXE_FILE=$(find . -name "*.exe" | head -n1)
+            if [ -n "$EXE_FILE" ]; then
+              mv "$EXE_FILE" "$FINAL_FILENAME"
+            else
+              echo "Error: Cannot find generated .exe file"
+              ls -la
+              exit 1
+            fi
+          fi
 
       - name: Release Windows
         uses: svenstaro/upload-release-action@v2
@@ -79,9 +139,8 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: "Linux-Windows-build"
+          name: "Windows-build"
           path: |
-            tal_downloader_linux_amd64_${{ github.event.release.tag_name }}
             tal_downloader_win64_${{ github.event.release.tag_name }}.exe
 
   Build_MacOS_ARM64_Android:
@@ -97,34 +156,96 @@ jobs:
       - name: Install fyne
         run: go install fyne.io/tools/cmd/fyne@latest
 
-      - name: Install UPX
-        run: brew install upx
-
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 12266719
 
+      - name: Update version info
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          # macOS 使用 sed -i ''
+          sed -i '' "s/const Version = \"Debug\"/const Version = \"$VERSION\"/" constants/constants.go
+          sed -i '' "s/const BuildTime = \"Unknown\"/const BuildTime = \"$BUILD_TIME\"/" constants/constants.go
+          
+          # 显示替换后的内容以便调试
+          echo "Updated constants.go:"
+          cat constants/constants.go
 
       - name: Build macOS ARM64
         env:
           CGO_ENABLED: 1
         run: |
-          fyne package --target darwin --name tal_downloader_macos_arm64_${{ github.event.release.tag_name }} --release
-          upx --best tal_downloader_macos_arm64_${{ github.event.release.tag_name }}.app/Contents/MacOS/*
-          zip -r -X tal_downloader_macos_arm64_${{ github.event.release.tag_name }}.zip tal_downloader_macos_arm64_${{ github.event.release.tag_name }}.app
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          APPNAME="好未来课程下载器"
+          FINAL_FILENAME=tal_downloader_macos_arm64_$TAG_NAME
+          
+          fyne package --target darwin --name "$APPNAME" --app-id com.itshenry.tal_downloader --app-version "$VERSION" --release
+          if [ -d "$APPNAME.app" ]; then
+            mv "$APPNAME.app" "$FINAL_FILENAME.app"
+          else
+            APP_DIR=$(find . -name "*.app" -type d | head -n1)
+            if [ -n "$APP_DIR" ]; then
+              mv "$APP_DIR" "$FINAL_FILENAME.app"
+            else
+              echo "Error: Cannot find generated .app directory"
+              ls -la
+              exit 1
+            fi
+          fi
+          zip -r -X $FINAL_FILENAME.zip $FINAL_FILENAME.app
 
       - name: Build Android ARM64
         env:
           CGO_ENABLED: 1
         run: |
-          fyne package --target android/arm64 --name tal_downloader_android_arm64_${{ github.event.release.tag_name }}.apk --release --app-id com.itshenry.tal_downloader
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          APPNAME="好未来课程下载器"
+          FILENAME="go________"  # 特殊命名处理fyne的中文bug
+          FINAL_FILENAME=tal_downloader_android_arm64_$TAG_NAME
+          
+          fyne package --target android/arm64 --name "$APPNAME" --app-id com.itshenry.tal_downloader --app-version "$VERSION" --release
+          if [ -f "$FILENAME.apk" ]; then
+            mv "$FILENAME.apk" "$FINAL_FILENAME.apk"
+          else
+            APK_FILE=$(find . -name "*.apk" | head -n1)
+            if [ -n "$APK_FILE" ]; then
+              mv "$APK_FILE" "$FINAL_FILENAME.apk"
+            else
+              echo "Error: Cannot find generated .apk file"
+              ls -la
+              exit 1
+            fi
+          fi
 
       - name: Build Android ARM
         env:
           CGO_ENABLED: 1
         run: |
-          fyne package --target android/arm --name tal_downloader_android_arm_${{ github.event.release.tag_name }}.apk --release --app-id com.itshenry.tal_downloader
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          APPNAME="好未来课程下载器"
+          FILENAME="go________"  # 特殊命名处理fyne的中文bug
+          FINAL_FILENAME=tal_downloader_android_arm_$TAG_NAME
+          
+          fyne package --target android/arm --name "$APPNAME" --app-id com.itshenry.tal_downloader --app-version "$VERSION" --release
+          if [ -f "$FILENAME.apk" ]; then
+            mv "$FILENAME.apk" "$FINAL_FILENAME.apk"
+          else
+            APK_FILE=$(find . -name "*.apk" | head -n1)
+            if [ -n "$APK_FILE" ]; then
+              mv "$APK_FILE" "$FINAL_FILENAME.apk"
+            else
+              echo "Error: Cannot find generated .apk file"
+              ls -la
+              exit 1
+            fi
+          fi
 
       - name: Release macOS ARM64
         uses: svenstaro/upload-release-action@v2
@@ -172,16 +293,43 @@ jobs:
       - name: Install fyne
         run: go install fyne.io/tools/cmd/fyne@latest
 
-      - name: Install UPX
-        run: brew install upx
+      - name: Update version info
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          # macOS 使用 sed -i ''
+          sed -i '' "s/const Version = \"Debug\"/const Version = \"$VERSION\"/" constants/constants.go
+          sed -i '' "s/const BuildTime = \"Unknown\"/const BuildTime = \"$BUILD_TIME\"/" constants/constants.go
+          
+          # 显示替换后的内容以便调试
+          echo "Updated constants.go:"
+          cat constants/constants.go
 
       - name: Build macOS x86_64
         env:
           CGO_ENABLED: 1
         run: |
-          fyne package --target darwin --name tal_downloader_macos_x86_64_${{ github.event.release.tag_name }} --release
-          upx --best tal_downloader_macos_x86_64_${{ github.event.release.tag_name }}.app/Contents/MacOS/*
-          zip -r -X tal_downloader_macos_x86_64_${{ github.event.release.tag_name }}.zip tal_downloader_macos_x86_64_${{ github.event.release.tag_name }}.app
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"  # 移除v前缀
+          APPNAME="好未来课程下载器"
+          FINAL_FILENAME=tal_downloader_macos_x86_64_$TAG_NAME
+          
+          fyne package --target darwin --name "$APPNAME" --app-id com.itshenry.tal_downloader --app-version "$VERSION" --release
+          if [ -d "$APPNAME.app" ]; then
+            mv "$APPNAME.app" "$FINAL_FILENAME.app"
+          else
+            APP_DIR=$(find . -name "*.app" -type d | head -n1)
+            if [ -n "$APP_DIR" ]; then
+              mv "$APP_DIR" "$FINAL_FILENAME.app"
+            else
+              echo "Error: Cannot find generated .app directory"
+              ls -la
+              exit 1
+            fi
+          fi
+          zip -r -X $FINAL_FILENAME.zip $FINAL_FILENAME.app
 
       - name: Release macOS x86_64
         uses: svenstaro/upload-release-action@v2

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -10,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/itsHenry35/tal_downloader/config"
+	"github.com/itsHenry35/tal_downloader/constants"
 	"github.com/itsHenry35/tal_downloader/models"
 	"github.com/itsHenry35/tal_downloader/utils"
 )
@@ -34,6 +36,35 @@ func NewLoginScreen(manager *Manager) fyne.CanvasObject {
 	}
 	ls.buildUI()
 	return ls.container
+}
+
+func (ls *LoginScreen) showVersionDialog() {
+	info := fmt.Sprintf(
+		"版本号: %s\n编译时间: %s\n作者: %s",
+		constants.Version,
+		constants.BuildTime,
+		constants.Author,
+	)
+
+	var d dialog.Dialog
+
+	d = dialog.NewCustomWithoutButtons("关于", container.NewVBox(
+		widget.NewLabel(info),
+		container.NewHBox(
+			layout.NewSpacer(),
+			widget.NewButton("GitHub", func() {
+				utils.OpenURL(constants.GithubURL)
+
+			}),
+			widget.NewButton("反馈问题", func() {
+				utils.OpenURL(constants.FeedbackURL)
+			}),
+			widget.NewButton("关闭", func() {
+				d.Hide()
+			}),
+		),
+	), ls.manager.window)
+	d.Show()
 }
 
 func (ls *LoginScreen) buildUI() {
@@ -107,11 +138,20 @@ func (ls *LoginScreen) buildUI() {
 	})
 	switchToPwd.Hide() // 初始隐藏短信登录按钮
 
+	versionButton := widget.NewButton(constants.Version, func() {
+		ls.showVersionDialog()
+	})
+	versionButton.Importance = widget.LowImportance
+	if strings.Contains(constants.Version, "PR") || strings.Contains(constants.Version, "CI") || strings.Contains(constants.Version, "Debug") {
+		versionButton.Importance = widget.DangerImportance
+	}
+
 	loginButton := widget.NewButton("登录", ls.doLogin)
 	loginButton.Importance = widget.HighImportance
 
 	// 按钮区域（底部，右对齐）
 	footer := container.NewHBox(
+		versionButton,
 		layout.NewSpacer(),
 		loginButton,
 	)

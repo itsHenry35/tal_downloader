@@ -35,6 +35,24 @@ jobs:
             libxxf86vm-dev \
             pkg-config
 
+      - name: Update version info
+        run: |
+          SHORT_COMMIT_ID=${GITHUB_SHA::7}
+          BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            VERSION="[PR]$SHORT_COMMIT_ID"
+          else
+            VERSION="[CI]$SHORT_COMMIT_ID"
+          fi
+          
+          # 替换 constants.go 文件中的版本信息
+          sed -i "s/const Version = \"Debug\"/const Version = \"$VERSION\"/" constants/constants.go
+          sed -i "s/const BuildTime = \"Unknown\"/const BuildTime = \"$BUILD_TIME\"/" constants/constants.go
+          
+          # 显示替换后的内容以便调试
+          echo "Updated constants.go:"
+          cat constants/constants.go
 
       - name: Build Linux AMD64
         env:
@@ -74,6 +92,25 @@ jobs:
       - name: Install fyne
         run: go install fyne.io/tools/cmd/fyne@latest
 
+      - name: Update version info
+        shell: bash
+        run: |
+          SHORT_COMMIT_ID=${GITHUB_SHA::7}
+          BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            VERSION="[PR]$SHORT_COMMIT_ID"
+          else
+            VERSION="[CI]$SHORT_COMMIT_ID"
+          fi
+          
+          # Windows 下的 sed 替换
+          sed -i "s/const Version = \"Debug\"/const Version = \"$VERSION\"/" constants/constants.go
+          sed -i "s/const BuildTime = \"Unknown\"/const BuildTime = \"$BUILD_TIME\"/" constants/constants.go
+          
+          # 显示替换后的内容以便调试
+          echo "Updated constants.go:"
+          cat constants/constants.go
 
       - name: Build Windows
         env:
@@ -118,6 +155,25 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 12266719
+
+      - name: Update version info
+        run: |
+          SHORT_COMMIT_ID=${GITHUB_SHA::7}
+          BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            VERSION="[PR]$SHORT_COMMIT_ID"
+          else
+            VERSION="[CI]$SHORT_COMMIT_ID"
+          fi
+          
+          # macOS 使用 sed -i ''
+          sed -i '' "s/const Version = \"Debug\"/const Version = \"$VERSION\"/" constants/constants.go
+          sed -i '' "s/const BuildTime = \"Unknown\"/const BuildTime = \"$BUILD_TIME\"/" constants/constants.go
+          
+          # 显示替换后的内容以便调试
+          echo "Updated constants.go:"
+          cat constants/constants.go
 
       - name: Build macOS ARM64
         env:
@@ -201,6 +257,24 @@ jobs:
       - name: Install fyne
         run: go install fyne.io/tools/cmd/fyne@latest
 
+      - name: Update version info
+        run: |
+          SHORT_COMMIT_ID=${GITHUB_SHA::7}
+          BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            VERSION="[PR]$SHORT_COMMIT_ID"
+          else
+            VERSION="[CI]$SHORT_COMMIT_ID"
+          fi
+          
+          # macOS 使用 sed -i ''
+          sed -i '' "s/const Version = \"Debug\"/const Version = \"$VERSION\"/" constants/constants.go
+          sed -i '' "s/const BuildTime = \"Unknown\"/const BuildTime = \"$BUILD_TIME\"/" constants/constants.go
+          
+          # 显示替换后的内容以便调试
+          echo "Updated constants.go:"
+          cat constants/constants.go
 
       - name: Build macOS x86_64
         env:

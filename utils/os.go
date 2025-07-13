@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -82,4 +83,12 @@ func CopyToAndroidStorage(sourcePath string, writer fyne.URIWriteCloser) error {
 	}
 
 	return nil
+}
+
+func OpenURL(rawURL string) error {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("无效的URL: %v", err)
+	}
+	return fyne.CurrentApp().OpenURL(parsedURL)
 }
