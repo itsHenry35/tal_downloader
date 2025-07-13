@@ -57,7 +57,21 @@ func (ls *LoginScreen) showVersionDialog() {
 
 			}),
 			widget.NewButton("反馈问题", func() {
-				utils.OpenURL(constants.FeedbackURL)
+				dialog.ShowCustomConfirm("反馈问题",
+					"继续", "取消",
+					container.NewVBox(
+						widget.NewLabel("请确认您当前使用的程序版本为最新版本。"),
+						widget.NewLabel("若非最新版本，请先升级至最新版本后，再进行问题测试。"),
+						widget.NewLabel("有关版本发布详情，请参阅 GitHub 页面。"),
+						widget.NewLabel("如问题仍未解决，请点击“继续”并在浏览器中提交 Issue。"),
+					),
+					func(confirmed bool) {
+						if confirmed {
+							utils.OpenURL(constants.FeedbackURL)
+						}
+					},
+					ls.manager.window,
+				)
 			}),
 			widget.NewButton("关闭", func() {
 				d.Hide()
