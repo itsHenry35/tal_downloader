@@ -17,7 +17,7 @@ func main() {
 		utils.CleanAndroidTempFolder(myApp)
 	}
 
-	window := myApp.NewWindow("好未来视频下载器")
+	window := myApp.NewWindow("好未来课程下载器")
 	window.Resize(config.DefaultWindowSize)
 
 	// Create main container

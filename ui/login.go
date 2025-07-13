@@ -37,7 +37,7 @@ func NewLoginScreen(manager *Manager) fyne.CanvasObject {
 }
 
 func (ls *LoginScreen) buildUI() {
-	title := widget.NewLabelWithStyle("好未来视频下载器 - 登录", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	title := widget.NewLabelWithStyle("登录", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
 	platforms := []string{"乐读", "学而思培优"}
 	platformMap := map[string]string{
