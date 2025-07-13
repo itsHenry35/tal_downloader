@@ -81,7 +81,10 @@ func (ds *DownloadProgressScreen) buildUI() {
 	var footer *fyne.Container
 	if !utils.IsAndroid() {
 		openFolderButton := widget.NewButton("打开下载目录", func() {
-			dialog.ShowInformation("提示", "请手动打开下载目录", ds.manager.window)
+			err := utils.OpenDirectory(ds.manager.downloadPath)
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("无法打开目录: %v", err), ds.manager.window)
+			}
 		})
 		footer = container.NewHBox(
 			ds.pauseButton,

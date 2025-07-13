@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -91,4 +92,19 @@ func OpenURL(rawURL string) error {
 		return fmt.Errorf("无效的URL: %v", err)
 	}
 	return fyne.CurrentApp().OpenURL(parsedURL)
+}
+
+func OpenDirectory(path string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	default: // Linux 或其他类Unix系统
+		cmd = exec.Command("xdg-open", path)
+	}
+
+	return cmd.Start()
 }
