@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/itsHenry35/tal_downloader/compare/v3.0.0...v3.0.1) (2025-07-28)
+
+
+### Bug Fixes
+
+* **deps:** update module fyne.io/fyne/v2 to v2.6.2 ([ea9a3d3](https://github.com/itsHenry35/tal_downloader/commit/ea9a3d3f8adae990fc2fd53caf2266b421e6f2a1))
+
 ## [3.0.0](https://github.com/itsHenry35/tal_downloader/compare/v2.4.0...v3.0.0) (2025-07-13)
 
 
