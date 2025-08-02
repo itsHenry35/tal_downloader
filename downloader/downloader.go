@@ -41,9 +41,9 @@ type Downloader struct {
 
 func NewDownloader(concurrentFiles, perFileThreads int) *Downloader {
 	transport := &http.Transport{
-		MaxIdleConns:        100,
-		MaxIdleConnsPerHost: 100,
-		MaxConnsPerHost:     100,
+		MaxIdleConns:        512,
+		MaxIdleConnsPerHost: 512,
+		MaxConnsPerHost:     512,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
