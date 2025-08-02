@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -364,13 +365,20 @@ func (ds *DownloadProgressScreen) saveFileToAndroid(tempPath, fileName string) {
 			return
 		}
 
+		// 保存成功后删除临时文件
+		actualPath := utils.GetAndroidSafeFilePath(tempPath)
+		if err := os.Remove(actualPath); err != nil {
+			// 删除失败不影响主流程，只记录日志
+			fmt.Printf("警告：删除临时文件失败: %v\n", err)
+		}
+
 		// 更新按钮状态
 		if saveBtn, ok := ds.saveButtons[tempPath]; ok {
 			saveBtn.SetText("已保存")
 			saveBtn.Disable()
 		}
 
-		dialog.ShowInformation("成功", "文件已保存", ds.manager.window)
+		dialog.ShowInformation("成功", "文件已保存到存储", ds.manager.window)
 	}, ds.manager.window)
 
 	// 设置默认文件名
