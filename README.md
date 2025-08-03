@@ -40,10 +40,9 @@
 
 1. 根据你的系统，从 [Releases · itsHenry35/tal_downloader (github.com)](https://github.com/itsHenry35/tal_downloader/releases) 下载程序。
 
-   - 安卓设备：下载 Android 版本（优先 Arm64，若不兼容可选择 Arm）。
-   - 苹果电脑：MacOS 版本，英特尔处理器选 x86_64，M1/M2芯片选 Arm64。
+   - 安卓设备：下载 Android 版本（优先 Arm64，若安装时出错可选择 Arm）。
+   - 苹果电脑：MacOS 版本，英特尔处理器选 x86_64，M芯片选 Arm64。
    - Linux 系统：下载对应 Linux 版本。
-
 2. 运行程序。
 
 ### 方法2：从源码运行
@@ -51,14 +50,17 @@
 1. 提前安装 Go 1.20.14。
 2. 根据 [Fyne 官方教程](https://docs.fyne.io/started/) 配置 C 语言编译器。
 3. 克隆项目代码：
+
    ```bash
    git clone https://github.com/itsHenry35/tal_downloader.git
+   ```
 
 4. 进入项目目录：
 
    ```bash
    cd tal_downloader
    ```
+
 5. 运行程序：
 
    ```bash
