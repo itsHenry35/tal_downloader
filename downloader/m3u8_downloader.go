@@ -16,7 +16,7 @@ import (
 )
 
 func (d *Downloader) downloadM3U8(task *DownloadTask) error {
-	task.Status = "preparing"
+	task.SetStatus("preparing")
 	task.StartTime = time.Now()
 
 	// 创建临时目录
@@ -26,15 +26,6 @@ func (d *Downloader) downloadM3U8(task *DownloadTask) error {
 	if err := utils.Mkdir(tmpDir); err != nil {
 		return err
 	}
-	defer func() {
-		// 清理临时目录
-		if utils.IsAndroid() {
-			actualPath := utils.GetAndroidSafeFilePath(tmpDir)
-			os.RemoveAll(actualPath)
-		} else {
-			os.RemoveAll(tmpDir)
-		}
-	}()
 
 	// 获取m3u8内容
 	resp, err := d.client.Get(task.URL)
@@ -62,31 +53,17 @@ func (d *Downloader) downloadM3U8(task *DownloadTask) error {
 	}
 
 	task.TotalSize = int64(len(tsList))
-	task.Status = "downloading"
+	task.SetStatus("downloading")
+
+	// 使用负数存储总段数，便于进度管理器识别M3U8任务
+	task.TotalSize = -int64(len(tsList))
+
+	// 将任务添加到进度管理器
+	d.progressManager.AddTask(task)
 
 	var wg sync.WaitGroup
 	concurrency := d.perFileThreads
 	sem := make(chan struct{}, concurrency)
-
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-	lastTime := time.Now()
-	lastDownloaded := int64(0)
-
-	go func() {
-		for range ticker.C {
-			if task.Status != "downloading" {
-				return
-			}
-			now := time.Now()
-			completed := atomic.LoadInt64(&task.DownloadedParts)
-			percent := float64(completed) / float64(task.TotalSize) * 100
-			speed := float64(completed-lastDownloaded) / now.Sub(lastTime).Seconds()
-			task.progress(percent*0.9, fmt.Sprintf("%.2f ts/s", speed), atomic.LoadInt64(&task.Downloaded), -1)
-			lastTime = now
-			lastDownloaded = completed
-		}
-	}()
 
 	for idx, tsURL := range tsList {
 		wg.Add(1)
@@ -109,12 +86,43 @@ func (d *Downloader) downloadM3U8(task *DownloadTask) error {
 
 	wg.Wait()
 
-	task.Status = "merging"
-	if task.progress != nil {
-		task.progress(90, "合并中", task.Downloaded, -1)
+	// 进入合并阶段，进度管理器会自动显示90%进度
+	task.SetStatus("merging")
+
+	// 合并TS文件
+	err = mergeTSFiles(tmpDir, task.FilePath)
+
+	// 清理临时目录（这也是合并过程的一部分）
+	if utils.IsAndroid() {
+		actualPath := utils.GetAndroidSafeFilePath(tmpDir)
+		os.RemoveAll(actualPath)
+	} else {
+		os.RemoveAll(tmpDir)
 	}
 
-	return mergeTSFiles(tmpDir, task.FilePath, task)
+	// 合并和清理都完成后，先从进度管理器移除任务，再设置完成状态
+	d.progressManager.RemoveTask(task)
+
+	if err == nil {
+		task.SetStatus("completed")
+		// 手动发送最终完成进度
+		if task.progress != nil {
+			// 获取最终文件大小
+			actualOutputPath := task.FilePath
+			if utils.IsAndroid() {
+				actualOutputPath = utils.GetAndroidSafeFilePath(task.FilePath)
+			}
+
+			stat, statErr := os.Stat(actualOutputPath)
+			if statErr == nil {
+				task.progress(100, "Completed", -1, stat.Size())
+			} else {
+				task.progress(100, "Completed", -1, atomic.LoadInt64(&task.Downloaded))
+			}
+		}
+	}
+
+	return err
 }
 
 func downloadTS(client *http.Client, url, filePath string, task *DownloadTask) error {
@@ -137,7 +145,7 @@ func downloadTS(client *http.Client, url, filePath string, task *DownloadTask) e
 	return err
 }
 
-func mergeTSFiles(tmpDir, outputFile string, task *DownloadTask) error {
+func mergeTSFiles(tmpDir, outputFile string) error {
 	out, err := utils.CreateFile(outputFile)
 	if err != nil {
 		return err
@@ -180,18 +188,5 @@ func mergeTSFiles(tmpDir, outputFile string, task *DownloadTask) error {
 		return err
 	}
 
-	// 获取最终文件大小
-	actualOutputPath := outputFile
-	if utils.IsAndroid() {
-		actualOutputPath = utils.GetAndroidSafeFilePath(outputFile)
-	}
-
-	stat, err := os.Stat(actualOutputPath)
-	if err != nil {
-		task.progress(100, "Completed", -1, atomic.LoadInt64(&task.Downloaded))
-		return nil
-	}
-	finalFileSize := stat.Size()
-	task.progress(100, "Completed", -1, finalFileSize)
 	return nil
 }
