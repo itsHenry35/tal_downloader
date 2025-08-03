@@ -138,11 +138,35 @@ func downloadTS(client *http.Client, url, filePath string, task *DownloadTask) e
 	}
 	defer out.Close()
 
-	n, err := io.Copy(out, resp.Body)
-	if err == nil {
-		atomic.AddInt64(&task.Downloaded, n)
+	// 使用缓冲读取以支持暂停功能
+	buf := make([]byte, 32*1024)
+	var totalBytes int64
+
+	for {
+		// 检查暂停状态
+		if task.isPaused.Load() {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
+		n, err := resp.Body.Read(buf)
+		if n > 0 {
+			_, writeErr := out.Write(buf[:n])
+			if writeErr != nil {
+				return writeErr
+			}
+			totalBytes += int64(n)
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
 	}
-	return err
+
+	atomic.AddInt64(&task.Downloaded, totalBytes)
+	return nil
 }
 
 func mergeTSFiles(tmpDir, outputFile string) error {
