@@ -18,19 +18,21 @@ import (
 )
 
 type DownloadProgressScreen struct {
-	manager           *Manager
-	progressBars      map[string]*widget.ProgressBar
-	speedLabels       map[string]*widget.Label
-	sizeLabels        map[string]*widget.Label
-	saveButtons       map[string]*widget.Button // 新增：保存按钮映射
-	downloadTasks     []*downloader.DownloadTask
-	pauseButton       *widget.Button
-	isPaused          bool
-	container         *fyne.Container
-	progressList      *fyne.Container
-	courseContainers  map[string]*fyne.Container
-	courseFoldState   map[string]bool
-	courseFoldButtons map[string]*widget.Button
+	manager            *Manager
+	progressBars       map[string]*widget.ProgressBar
+	speedLabels        map[string]*widget.Label
+	sizeLabels         map[string]*widget.Label
+	saveButtons        map[string]*widget.Button           // 新增：保存按钮映射
+	pauseResumeButtons map[string]*widget.Button           // 新增：每个任务的暂停/继续按钮映射
+	taskMap            map[string]*downloader.DownloadTask // 新增：文件路径到任务的映射
+	downloadTasks      []*downloader.DownloadTask
+	pauseButton        *widget.Button
+	isPaused           bool
+	container          *fyne.Container
+	progressList       *fyne.Container
+	courseContainers   map[string]*fyne.Container
+	courseFoldState    map[string]bool
+	courseFoldButtons  map[string]*widget.Button
 }
 
 func (ds *DownloadProgressScreen) toggleCourseFold(courseID string) {
@@ -53,14 +55,16 @@ func (ds *DownloadProgressScreen) toggleCourseFold(courseID string) {
 
 func NewDownloadProgressScreen(manager *Manager) fyne.CanvasObject {
 	ds := &DownloadProgressScreen{
-		manager:           manager,
-		progressBars:      make(map[string]*widget.ProgressBar),
-		speedLabels:       make(map[string]*widget.Label),
-		sizeLabels:        make(map[string]*widget.Label),
-		saveButtons:       make(map[string]*widget.Button),
-		courseContainers:  make(map[string]*fyne.Container),
-		courseFoldState:   make(map[string]bool),
-		courseFoldButtons: make(map[string]*widget.Button),
+		manager:            manager,
+		progressBars:       make(map[string]*widget.ProgressBar),
+		speedLabels:        make(map[string]*widget.Label),
+		sizeLabels:         make(map[string]*widget.Label),
+		saveButtons:        make(map[string]*widget.Button),
+		pauseResumeButtons: make(map[string]*widget.Button),
+		taskMap:            make(map[string]*downloader.DownloadTask),
+		courseContainers:   make(map[string]*fyne.Container),
+		courseFoldState:    make(map[string]bool),
+		courseFoldButtons:  make(map[string]*widget.Button),
 	}
 	ds.buildUI()
 	ds.startDownloads()
@@ -227,6 +231,7 @@ func (ds *DownloadProgressScreen) startDownloads() {
 				})
 
 				ds.downloadTasks = append(ds.downloadTasks, task)
+				ds.taskMap[filePath] = task // 保存任务映射
 				fyne.Do(func() {
 					ds.addProgressItem(course.CourseID, fileName, filePath, false, task.TotalSize)
 				})
@@ -252,6 +257,15 @@ func (ds *DownloadProgressScreen) addProgressItem(courseID, fileName, filePath s
 	ds.speedLabels[filePath] = speedLabel
 	ds.sizeLabels[filePath] = sizeLabel
 
+	// 创建单独的暂停/继续按钮
+	pauseResumeButton := widget.NewButton("暂停", func() {
+		ds.toggleSingleTask(filePath)
+	})
+	if exists {
+		pauseResumeButton.Hide() // 文件已存在时隐藏按钮
+	}
+	ds.pauseResumeButtons[filePath] = pauseResumeButton
+
 	// 为安卓创建保存按钮
 	var saveButton *widget.Button
 	if utils.IsAndroid() {
@@ -266,9 +280,9 @@ func (ds *DownloadProgressScreen) addProgressItem(courseID, fileName, filePath s
 	// 创建速度标签容器
 	var speedContainer fyne.CanvasObject
 	if utils.IsAndroid() && saveButton != nil {
-		speedContainer = container.NewHBox(speedLabel, layout.NewSpacer(), saveButton)
+		speedContainer = container.NewHBox(speedLabel, layout.NewSpacer(), pauseResumeButton, saveButton)
 	} else {
-		speedContainer = speedLabel
+		speedContainer = container.NewHBox(speedLabel, layout.NewSpacer(), pauseResumeButton)
 	}
 
 	item := container.NewVBox(
@@ -307,6 +321,10 @@ func (ds *DownloadProgressScreen) updateProgress(filePath string, progress float
 	if label, ok := ds.speedLabels[filePath]; ok {
 		if progress >= 100 {
 			label.SetText("已完成")
+			// 隐藏暂停/继续按钮（下载成功）
+			if pauseBtn, ok := ds.pauseResumeButtons[filePath]; ok {
+				pauseBtn.Hide()
+			}
 			// 安卓平台显示保存按钮
 			if utils.IsAndroid() {
 				if saveBtn, ok := ds.saveButtons[filePath]; ok {
@@ -317,6 +335,10 @@ func (ds *DownloadProgressScreen) updateProgress(filePath string, progress float
 			if strings.Contains(speed, "错误") {
 				label.SetText(speed)
 				label.Importance = widget.DangerImportance
+				// 下载失败时，将暂停按钮改为继续
+				if pauseBtn, ok := ds.pauseResumeButtons[filePath]; ok {
+					pauseBtn.SetText("继续")
+				}
 			} else {
 				label.SetText(fmt.Sprintf("下载速度: %s", speed))
 			}
@@ -338,10 +360,38 @@ func (ds *DownloadProgressScreen) togglePause() {
 		for _, task := range ds.downloadTasks {
 			task.Pause()
 		}
+		// 更新所有单独按钮的状态
+		for filePath, btn := range ds.pauseResumeButtons {
+			if task, ok := ds.taskMap[filePath]; ok && (task.Status == "downloading" || task.Status == "preparing") {
+				btn.SetText("继续")
+			}
+		}
 	} else {
 		ds.pauseButton.SetText("暂停全部")
 		for _, task := range ds.downloadTasks {
 			task.Resume()
+		}
+		// 更新所有单独按钮的状态
+		for filePath, btn := range ds.pauseResumeButtons {
+			if task, ok := ds.taskMap[filePath]; ok && (task.Status == "downloading" || task.Status == "preparing") {
+				btn.SetText("暂停")
+			}
+		}
+	}
+}
+
+// toggleSingleTask 处理单个任务的暂停/继续
+func (ds *DownloadProgressScreen) toggleSingleTask(filePath string) {
+	if task, ok := ds.taskMap[filePath]; ok {
+		if btn, ok := ds.pauseResumeButtons[filePath]; ok {
+			// 检查任务当前是否被暂停
+			if btn.Text == "暂停" {
+				task.Pause()
+				btn.SetText("继续")
+			} else {
+				task.Resume()
+				btn.SetText("暂停")
+			}
 		}
 	}
 }
