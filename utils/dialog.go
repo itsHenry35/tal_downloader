@@ -16,3 +16,11 @@ func ShowInfoDialog(title, message string, window fyne.Window) {
 		dialog.ShowInformation(title, message, window)
 	})
 }
+
+func ShowCustomConfirm(title string, confirm string, dismiss string, content fyne.CanvasObject, callback func(bool), parent fyne.Window) {
+	fyne.Do(func() {
+		dialog.ShowCustomConfirm(title, confirm, dismiss, content, func(ok bool) {
+			callback(ok)
+		}, parent)
+	})
+}

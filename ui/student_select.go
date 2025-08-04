@@ -71,6 +71,12 @@ func (sl *StudentSelectScreen) loadStudents() {
 func (sl *StudentSelectScreen) buildUI() {
 	title := widget.NewLabelWithStyle("请选择学员", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
+	// 返回按钮
+	backButton := widget.NewButton("←", func() {
+		sl.manager.ShowLogin()
+	})
+	backButton.Importance = widget.LowImportance
+
 	sl.radioGroup = widget.NewRadioGroup([]string{}, func(selected string) {
 		for i, option := range sl.radioGroup.Options {
 			if selected == option {
@@ -97,8 +103,14 @@ func (sl *StudentSelectScreen) buildUI() {
 	)
 
 	// 顶部标题
+	// 使用Stack布局实现绝对定位，确保标题真正居中
+	// why the hell? spacer填居中的textalighncenter根本不管用lol
+	titleCentered := container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer())
+	backButtonContainer := container.NewHBox(backButton, layout.NewSpacer())
+
+	titleRow := container.NewStack(titleCentered, backButtonContainer)
 	top := container.NewVBox(
-		container.NewPadded(title),
+		container.NewPadded(titleRow),
 		widget.NewSeparator(),
 	)
 

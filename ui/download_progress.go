@@ -192,6 +192,12 @@ func (ds *DownloadProgressScreen) applyProgressUpdate(update ProgressUpdate) {
 func (ds *DownloadProgressScreen) buildUI() {
 	title := widget.NewLabelWithStyle("下载进度", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
+	// 返回按钮
+	backButton := widget.NewButton("←", func() {
+		ds.manager.ShowCourseSelection()
+	})
+	backButton.Importance = widget.LowImportance
+
 	// 滚动区
 	ds.progressList = container.NewVBox()
 	scroll := container.NewScroll(ds.progressList)
@@ -222,8 +228,13 @@ func (ds *DownloadProgressScreen) buildUI() {
 	}
 
 	// 上部标题
+	// 使用Stack布局实现绝对定位，确保标题真正居中
+	titleCentered := container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer())
+	backButtonContainer := container.NewHBox(backButton, layout.NewSpacer())
+
+	titleRow := container.NewStack(titleCentered, backButtonContainer)
 	top := container.NewVBox(
-		container.NewPadded(title),
+		container.NewPadded(titleRow),
 		widget.NewSeparator(),
 	)
 

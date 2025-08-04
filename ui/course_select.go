@@ -73,6 +73,12 @@ func (cs *CourseSelectionScreen) loadCourses() {
 func (cs *CourseSelectionScreen) buildUI() {
 	title := widget.NewLabelWithStyle("选择要下载的课程", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
+	// 返回按钮
+	backButton := widget.NewButton("←", func() {
+		cs.manager.ShowStudentSelection()
+	})
+	backButton.Importance = widget.LowImportance
+
 	cs.courseList = container.NewVBox()
 	scroll := container.NewScroll(cs.courseList)
 	scroll.SetMinSize(fyne.NewSize(600, 400))
@@ -133,8 +139,13 @@ func (cs *CourseSelectionScreen) buildUI() {
 	downloadButton.Importance = widget.HighImportance
 
 	// 顶部部分（标题）
+	// 使用Stack布局实现绝对定位，确保标题真正居中
+	titleCentered := container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer())
+	backButtonContainer := container.NewHBox(backButton, layout.NewSpacer())
+
+	titleRow := container.NewStack(titleCentered, backButtonContainer)
 	top := container.NewVBox(
-		container.NewPadded(title),
+		container.NewPadded(titleRow),
 		widget.NewSeparator(),
 	)
 

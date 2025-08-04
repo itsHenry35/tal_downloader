@@ -5,8 +5,12 @@ import (
 	"github.com/itsHenry35/tal_downloader/config"
 	"github.com/itsHenry35/tal_downloader/downloader"
 	"github.com/itsHenry35/tal_downloader/models"
+	"github.com/itsHenry35/tal_downloader/utils"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/mobile"
+	"fyne.io/fyne/v2/widget"
 )
 
 type Manager struct {
@@ -20,37 +24,96 @@ type Manager struct {
 	downloadPath     string
 	isExtensive      bool
 	isOverwrite      bool
+	currentScreen    string
 }
 
 func NewManager(window fyne.Window, mainContainer *fyne.Container) *Manager {
-	return &Manager{
+	manager := &Manager{
 		window:           window,
 		mainContainer:    mainContainer,
 		apiClient:        api.NewClient(),
 		downloader:       downloader.NewDownloader(config.MaxConcurrentDownloads, config.ThreadCount),
 		selectedLectures: make(map[string][]int),
+		currentScreen:    "login",
+	}
+
+	// 设置安卓返回键处理
+	if utils.IsAndroid() {
+		window.Canvas().SetOnTypedKey(manager.handleAndroidBackKey)
+	}
+
+	return manager
+}
+
+// handleAndroidBackKey 处理安卓返回键事件
+func (m *Manager) handleAndroidBackKey(keyEvent *fyne.KeyEvent) {
+	if keyEvent.Name != mobile.KeyBack {
+		return
+	}
+
+	switch m.currentScreen {
+	case "login":
+		// 登录页面，确认退出
+		utils.ShowCustomConfirm("退出应用", "确定", "取消",
+			container.NewVBox(widget.NewLabel("确定要退出应用吗？")),
+			func(confirmed bool) {
+				if confirmed {
+					m.window.Close()
+				}
+			}, m.window)
+	case "student":
+		// 学员选择页面，确认返回登录
+		utils.ShowCustomConfirm("返回登录", "确定", "取消",
+			container.NewVBox(widget.NewLabel("确定要返回登录页面吗？")),
+			func(confirmed bool) {
+				if confirmed {
+					m.ShowLogin()
+				}
+			}, m.window)
+	case "course":
+		// 课程选择页面，确认返回学员选择
+		utils.ShowCustomConfirm("返回上级", "确定", "取消",
+			container.NewVBox(widget.NewLabel("确定要返回学员选择页面吗？")),
+			func(confirmed bool) {
+				if confirmed {
+					m.ShowStudentSelection()
+				}
+			}, m.window)
+	case "download":
+		// 下载进度页面，确认返回课程选择
+		utils.ShowCustomConfirm("返回上级", "确定", "取消",
+			container.NewVBox(widget.NewLabel("确定要返回课程选择页面吗？")),
+			func(confirmed bool) {
+				if confirmed {
+					m.ShowCourseSelection()
+				}
+			}, m.window)
 	}
 }
 
 func (m *Manager) ShowLogin() {
+	m.currentScreen = "login"
 	loginScreen := NewLoginScreen(m)
 	m.mainContainer.Objects = []fyne.CanvasObject{loginScreen}
 	m.mainContainer.Refresh()
 }
 
 func (m *Manager) ShowStudentSelection() {
+	m.currentScreen = "student"
 	studentScreen := NewStudentSelectScreen(m)
 	m.mainContainer.Objects = []fyne.CanvasObject{studentScreen}
 	m.mainContainer.Refresh()
 }
 
 func (m *Manager) ShowCourseSelection() {
+	m.currentScreen = "course"
 	courseScreen := NewCourseSelectionScreen(m)
 	m.mainContainer.Objects = []fyne.CanvasObject{courseScreen}
 	m.mainContainer.Refresh()
 }
 
 func (m *Manager) ShowDownloadProgress() {
+	m.currentScreen = "download"
 	downloadScreen := NewDownloadProgressScreen(m)
 	m.mainContainer.Objects = []fyne.CanvasObject{downloadScreen}
 	m.mainContainer.Refresh()
