@@ -14,27 +14,29 @@ import (
 )
 
 type Manager struct {
-	window           fyne.Window
-	mainContainer    *fyne.Container
-	apiClient        *api.Client
-	downloader       *downloader.Downloader
-	authData         *models.AuthData
-	selectedCourses  []*models.Course
-	selectedLectures map[string][]int // courseID -> selected lecture indices
-	downloadPath     string
-	isExtensive      bool
-	isOverwrite      bool
-	currentScreen    string
+	window               fyne.Window
+	mainContainer        *fyne.Container
+	apiClient            *api.Client
+	downloader           *downloader.Downloader
+	authData             *models.AuthData
+	selectedCourses      []*models.Course
+	selectedLectures     map[string][]int // courseID -> selected lecture indices
+	downloadPath         string
+	isExtensive          bool
+	isOverwrite          bool
+	currentScreen        string
+	isConfirmScreenShown bool
 }
 
 func NewManager(window fyne.Window, mainContainer *fyne.Container) *Manager {
 	manager := &Manager{
-		window:           window,
-		mainContainer:    mainContainer,
-		apiClient:        api.NewClient(),
-		downloader:       downloader.NewDownloader(config.MaxConcurrentDownloads, config.ThreadCount),
-		selectedLectures: make(map[string][]int),
-		currentScreen:    "login",
+		window:               window,
+		mainContainer:        mainContainer,
+		apiClient:            api.NewClient(),
+		downloader:           downloader.NewDownloader(config.MaxConcurrentDownloads, config.ThreadCount),
+		selectedLectures:     make(map[string][]int),
+		currentScreen:        "login",
+		isConfirmScreenShown: false,
 	}
 
 	// 设置安卓返回键处理
@@ -47,43 +49,51 @@ func NewManager(window fyne.Window, mainContainer *fyne.Container) *Manager {
 
 // handleAndroidBackKey 处理安卓返回键事件
 func (m *Manager) handleAndroidBackKey(keyEvent *fyne.KeyEvent) {
-	if keyEvent.Name != mobile.KeyBack {
+	if keyEvent.Name != mobile.KeyBack || m.isConfirmScreenShown {
 		return
 	}
 
 	switch m.currentScreen {
 	case "login":
 		// 登录页面，确认退出
+		m.isConfirmScreenShown = true
 		utils.ShowCustomConfirm("退出应用", "确定", "取消",
 			container.NewVBox(widget.NewLabel("确定要退出应用吗？")),
 			func(confirmed bool) {
+				m.isConfirmScreenShown = false
 				if confirmed {
 					m.window.Close()
 				}
 			}, m.window)
 	case "student":
 		// 学员选择页面，确认返回登录
+		m.isConfirmScreenShown = true
 		utils.ShowCustomConfirm("返回登录", "确定", "取消",
 			container.NewVBox(widget.NewLabel("确定要返回登录页面吗？")),
 			func(confirmed bool) {
+				m.isConfirmScreenShown = false
 				if confirmed {
 					m.ShowLogin()
 				}
 			}, m.window)
 	case "course":
 		// 课程选择页面，确认返回学员选择
+		m.isConfirmScreenShown = true
 		utils.ShowCustomConfirm("返回上级", "确定", "取消",
 			container.NewVBox(widget.NewLabel("确定要返回学员选择页面吗？")),
 			func(confirmed bool) {
+				m.isConfirmScreenShown = false
 				if confirmed {
 					m.ShowStudentSelection()
 				}
 			}, m.window)
 	case "download":
 		// 下载进度页面，确认返回课程选择
+		m.isConfirmScreenShown = true
 		utils.ShowCustomConfirm("返回上级", "确定", "取消",
 			container.NewVBox(widget.NewLabel("确定要返回课程选择页面吗？")),
 			func(confirmed bool) {
+				m.isConfirmScreenShown = false
 				if confirmed {
 					m.ShowCourseSelection()
 				}
