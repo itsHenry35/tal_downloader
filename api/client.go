@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/itsHenry35/tal_downloader/config"
+	"github.com/itsHenry35/tal_downloader/constants"
 )
 
 type Client struct {
@@ -97,10 +98,12 @@ func (c *Client) doRequest(method, urlStr string, body interface{}, headers map[
 		return nil, err
 	}
 
-	fmt.Println("Request URL:", urlStr)
-	fmt.Println("Request Method:", method)
-	// print request headers
-	fmt.Println("Request Headers:", req.Header)
+	if constants.Version == "Debug" {
+		fmt.Println("Request URL:", urlStr)
+		fmt.Println("Request Method:", method)
+		// print request headers
+		fmt.Println("Request Headers:", req.Header)
+	}
 	// print response body
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -108,8 +111,10 @@ func (c *Client) doRequest(method, urlStr string, body interface{}, headers map[
 	}
 	// Reset the response body so it can be read again later
 	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	fmt.Println("Response Status:", resp.Status)
-	fmt.Println("Response Body:", string(bodyBytes))
+	if constants.Version == "Debug" {
+		fmt.Println("Response Status:", resp.Status)
+		fmt.Println("Response Body:", string(bodyBytes))
+	}
 
 	return resp, nil
 }
