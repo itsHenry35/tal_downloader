@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"os"
+
 	"github.com/itsHenry35/tal_downloader/api"
 	"github.com/itsHenry35/tal_downloader/config"
 	"github.com/itsHenry35/tal_downloader/downloader"
@@ -62,7 +64,7 @@ func (m *Manager) handleAndroidBackKey(keyEvent *fyne.KeyEvent) {
 			func(confirmed bool) {
 				m.isConfirmScreenShown = false
 				if confirmed {
-					m.window.Close()
+					os.Exit(0)
 				}
 			}, m.window)
 	case "student":
