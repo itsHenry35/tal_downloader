@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.1.0](https://github.com/itsHenry35/tal_downloader/compare/v3.0.1...v3.1.0) (2025-08-04)
+
+
+### Features
+
+* add back button ([727badc](https://github.com/itsHenry35/tal_downloader/commit/727badc544c31509ae9560b87c313f7840a98665))
+* increase connections ([9e1fbac](https://github.com/itsHenry35/tal_downloader/commit/9e1fbacf4a7f673f1611bb6e184344082569a70a))
+* remove temp file on android after saving ([c7c816c](https://github.com/itsHenry35/tal_downloader/commit/c7c816ca3a0915aad1dad03fa9723327cefe0077))
+* support pause for m3u8 downlaoder ([aca5f31](https://github.com/itsHenry35/tal_downloader/commit/aca5f31d633a5950b4864f97e6033735b566d494))
+* support resume/pause for each function ([c69b168](https://github.com/itsHenry35/tal_downloader/commit/c69b1681d42a491e882f02c9257b7c295966701a))
+
+
+### Bug Fixes
+
+* anr on quit on android ([e76d9ad](https://github.com/itsHenry35/tal_downloader/commit/e76d9ad9cab1d286cdd2801c518e7e2ee74c18f7))
+* don't show android confirmscreen if already opened ([bae941d](https://github.com/itsHenry35/tal_downloader/commit/bae941d1bfcd6cdf7b62396b91fbe6e12e2e400e))
+* optimize threading operations ([64aaff8](https://github.com/itsHenry35/tal_downloader/commit/64aaff870a6ad823a13b3f3fb3f7d38676935a9c))
+
 ## [3.0.1](https://github.com/itsHenry35/tal_downloader/compare/v3.0.0...v3.0.1) (2025-07-28)
 
 
