@@ -306,7 +306,7 @@ func (ds *DownloadProgressScreen) startDownloads() {
 		go func(course *models.Course, courseDir string, selectedIndices []int) {
 			defer wg.Done()
 
-			lectures, err := ds.manager.apiClient.GetLectures(course.CourseID, course.TutorID)
+			lectures, err := ds.manager.apiClient.GetLectures(course.CourseID)
 			if err != nil {
 				utils.ShowErrorDialog(err, ds.manager.window)
 				return

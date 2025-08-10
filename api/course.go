@@ -43,7 +43,7 @@ func (c *Client) GetCourseList() ([]*models.Course, error) {
 }
 
 // GetLectures retrieves lectures for a course, paginated fetch until empty result
-func (c *Client) GetLectures(courseID, tutorID string) ([]*models.Lecture, error) {
+func (c *Client) GetLectures(courseID string) ([]*models.Lecture, error) {
 	var allLectures []*models.Lecture
 	page := 1
 	perPage := 10

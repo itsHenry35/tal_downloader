@@ -14,7 +14,7 @@ func main() {
 
 	// 安卓平台启动时清理临时文件夹
 	if utils.IsAndroid() {
-		utils.CleanAndroidTempFolder(myApp)
+		utils.CleanAndroidTempFolder()
 	}
 
 	window := myApp.NewWindow("好未来课程下载器")

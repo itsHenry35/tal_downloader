@@ -199,7 +199,7 @@ func (c *Client) getFinalAuth(code string) (*models.AuthData, error) {
 
 // GetStudentAccounts 获取当前账号下的所有学生账号列表
 func (c *Client) GetStudentAccounts() (models.StudentAccountListResponse, error) {
-	url := fmt.Sprintf("%s/passport/v1/students/account-list", config.CourseAPIBase)
+	listURL := fmt.Sprintf("%s/passport/v1/students/account-list", config.CourseAPIBase)
 
 	payload := map[string]string{
 		"stuPuId":   c.userID, // 从客户端已登录信息中取
@@ -217,7 +217,7 @@ func (c *Client) GetStudentAccounts() (models.StudentAccountListResponse, error)
 		"version":      "3.22.0.99",
 	}
 
-	resp, err := c.doRequest("POST", url, payload, headers, true)
+	resp, err := c.doRequest("POST", listURL, payload, headers, true)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (c *Client) GetStudentAccounts() (models.StudentAccountListResponse, error)
 
 // SwitchStudentAccount 切换学生账号
 func (c *Client) SwitchStudentAccount(currentUID, nextUID string) error {
-	url := fmt.Sprintf("%s/passport/v2/login/student/change-stu", config.CourseAPIBase)
+	changeURL := fmt.Sprintf("%s/passport/v2/login/student/change-stu", config.CourseAPIBase)
 
 	payload := map[string]string{
 		"stuPuId":        nextUID,
@@ -248,7 +248,7 @@ func (c *Client) SwitchStudentAccount(currentUID, nextUID string) error {
 		"version":      "3.22.0.99",
 	}
 
-	resp, err := c.doRequest("POST", url, payload, headers, true)
+	resp, err := c.doRequest("POST", changeURL, payload, headers, true)
 	if err != nil {
 		return err
 	}

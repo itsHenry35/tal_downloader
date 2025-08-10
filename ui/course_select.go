@@ -268,7 +268,7 @@ func (cs *CourseSelectionScreen) showLectureSelectionDialog(course *models.Cours
 
 	confirmBtn := widget.NewButton("确定", func() {
 		// 收集选中的讲
-		selected := []int{}
+		var selected []int
 		for i, check := range lectureChecks {
 			if check.Checked {
 				selected = append(selected, i)

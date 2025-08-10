@@ -16,7 +16,7 @@ func IsAndroid() bool {
 	return runtime.GOOS == "android"
 }
 
-func CleanAndroidTempFolder(app fyne.App) {
+func CleanAndroidTempFolder() {
 	_ = os.RemoveAll(GetAndroidSafeFilePath("temp"))
 }
 
