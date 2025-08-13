@@ -41,7 +41,7 @@ func (sl *StudentSelectScreen) loadStudents() {
 
 		// 所有 UI 操作集中到 fyne.Do，避免 UI 线程冲突
 		fyne.Do(func() {
-			progressDialog.Hide()
+			progressDialog.Dismiss()
 
 			if err != nil {
 				utils.ShowErrorDialog(err, sl.manager.window)
@@ -198,7 +198,7 @@ func (sl *StudentSelectScreen) switchAccount() {
 
 		// 所有 UI 更新统一在主线程处理
 		fyne.Do(func() {
-			progressDialog.Hide()
+			progressDialog.Dismiss()
 
 			if err != nil {
 				utils.ShowErrorDialog(err, sl.manager.window)

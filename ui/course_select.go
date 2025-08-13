@@ -55,7 +55,7 @@ func (cs *CourseSelectionScreen) loadCourses() {
 
 	go func() {
 		defer fyne.Do(func() {
-			progressDialog.Hide()
+			progressDialog.Dismiss()
 		})
 
 		courses, err := cs.manager.apiClient.GetCourseList()
@@ -290,11 +290,11 @@ func (cs *CourseSelectionScreen) showLectureSelectionDialog(course *models.Cours
 				check.Refresh()
 			}
 		}
-		d.Hide()
+		d.Dismiss()
 	})
 
 	cancelBtn := widget.NewButton("取消", func() {
-		d.Hide()
+		d.Dismiss()
 	})
 
 	buttons := container.NewHBox(

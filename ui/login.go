@@ -76,7 +76,7 @@ func (ls *LoginScreen) showVersionDialog() {
 				)
 			}),
 			widget.NewButton("关闭", func() {
-				d.Hide()
+				d.Dismiss()
 			}),
 		),
 	), ls.manager.window)
@@ -423,7 +423,7 @@ func (ls *LoginScreen) doLogin() {
 		}
 
 		fyne.Do(func() {
-			progressDialog.Hide()
+			progressDialog.Dismiss()
 
 			if msgErr != nil {
 				utils.ShowErrorDialog(msgErr, ls.manager.window)
