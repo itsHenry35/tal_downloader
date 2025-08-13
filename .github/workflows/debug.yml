@@ -82,7 +82,7 @@ jobs:
             tal_downloader_linux_amd64_*
 
   Build_Windows:
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Disable Defender real-time monitoring
         run: |
