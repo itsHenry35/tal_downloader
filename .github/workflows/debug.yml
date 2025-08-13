@@ -82,8 +82,13 @@ jobs:
             tal_downloader_linux_amd64_*
 
   Build_Windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
+      - name: Disable Defender real-time monitoring
+        run: |
+          Set-MpPreference -DisableRealtimeMonitoring $true
+        shell: pwsh
+      
       - uses: actions/checkout@v5
 
       - name: Set up Go
