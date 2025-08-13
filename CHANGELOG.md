@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/itsHenry35/tal_downloader/compare/v3.1.0...v3.2.0) (2025-08-13)
+
+
+### Features
+
+* support saving accounts for further uses ([a4c8190](https://github.com/itsHenry35/tal_downloader/commit/a4c8190b6df31b29aca235cd091e8187a26cf182))
+
 ## [3.1.0](https://github.com/itsHenry35/tal_downloader/compare/v3.0.1...v3.1.0) (2025-08-04)
 
 
