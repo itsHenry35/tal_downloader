@@ -208,9 +208,5 @@ func mergeTSFiles(tmpDir, outputFile string) error {
 			return err
 		}
 	}
-	if err := out.Sync(); err != nil {
-		return err
-	}
-
-	return nil
+	return out.Sync()
 }
