@@ -13,7 +13,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: '1.25'
 
       - name: Install system dependencies
         run: |
@@ -81,7 +81,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: '1.25'
 
       - name: Install fyne
         run: go install fyne.io/tools/cmd/fyne@latest
@@ -151,7 +151,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: '1.25'
 
       - name: Install fyne
         run: go install fyne.io/tools/cmd/fyne@latest
@@ -288,7 +288,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.20'
+          go-version: '1.25'
 
       - name: Install fyne
         run: go install fyne.io/tools/cmd/fyne@latest
