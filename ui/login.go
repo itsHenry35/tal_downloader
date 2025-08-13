@@ -25,8 +25,10 @@ type LoginScreen struct {
 	smsCodeEntry   *widget.Entry
 	zoneSelect     *widget.Select
 	sendButton     *widget.Button
+	saveUserCheck  *widget.Check
 	loginMode      string
 	container      *fyne.Container
+	savedUsersData *models.SavedUsersData
 }
 
 func NewLoginScreen(manager *Manager) fyne.CanvasObject {
@@ -81,16 +83,148 @@ func (ls *LoginScreen) showVersionDialog() {
 	d.Show()
 }
 
+// loadSavedUsers 加载保存的用户数据
+func (ls *LoginScreen) loadSavedUsers() {
+	var err error
+	ls.savedUsersData, err = utils.LoadSavedUsers()
+	if err != nil {
+		ls.savedUsersData = &models.SavedUsersData{Users: []models.SavedUser{}}
+	}
+}
+
+// showSavedUserSelectionDialog 显示保存用户选择对话框
+func (ls *LoginScreen) showSavedUserSelectionDialog() {
+	if ls.savedUsersData == nil {
+		ls.loadSavedUsers()
+	}
+
+	if len(ls.savedUsersData.Users) == 0 {
+		utils.ShowInfoDialog("提示", "没有保存的账号", ls.manager.window)
+		return
+	}
+
+	var selectedUserIndex = -1
+	var d dialog.Dialog
+
+	// 创建用户列表项
+	var userItems []fyne.CanvasObject
+	var checkBoxes []*widget.Check
+
+	for i, user := range ls.savedUsersData.Users {
+		// 删除按钮
+		deleteBtn := widget.NewButton("-", nil)
+		deleteBtn.Importance = widget.DangerImportance
+
+		// 捕获当前用户索引，避免闭包问题
+		currentIndex := i
+		currentUser := user
+
+		deleteBtn.OnTapped = func() {
+			ls.deleteSavedUserFromDialog(currentUser, d)
+		}
+
+		// 单选框（显示昵称和平台）
+		displayText := fmt.Sprintf("%s - %s", user.Nickname, user.Platform)
+		checkBox := widget.NewCheck(displayText, func(checked bool) {
+			if checked {
+				selectedUserIndex = currentIndex
+				// 取消其他复选框的选择
+				for j, cb := range checkBoxes {
+					if j != currentIndex {
+						cb.SetChecked(false)
+					}
+				}
+			} else {
+				// 如果取消选择，重置selectedUserIndex
+				if selectedUserIndex == currentIndex {
+					selectedUserIndex = -1
+				}
+			}
+		})
+		checkBoxes = append(checkBoxes, checkBox)
+
+		// 整体布局：左侧单选框 + 右侧删除按钮
+		userItem := container.NewBorder(nil, nil, checkBox, deleteBtn, widget.NewLabel(""))
+		userItems = append(userItems, userItem)
+	}
+
+	// 创建滚动容器
+	userList := container.NewVBox(userItems...)
+	scrollContainer := container.NewScroll(userList)
+	scrollContainer.SetMinSize(fyne.NewSize(500, 300))
+
+	// 确认和取消按钮
+	confirmBtn := widget.NewButton("确认", func() {
+		if selectedUserIndex >= 0 && selectedUserIndex < len(ls.savedUsersData.Users) {
+			d.Dismiss()
+			ls.loginWithSavedUser(ls.savedUsersData.Users[selectedUserIndex])
+		} else {
+			utils.ShowInfoDialog("提示", "请选择一个账号", ls.manager.window)
+		}
+	})
+	confirmBtn.Importance = widget.HighImportance
+
+	cancelBtn := widget.NewButton("取消", func() {
+		d.Dismiss()
+	})
+
+	buttons := container.NewHBox(
+		layout.NewSpacer(),
+		cancelBtn,
+		confirmBtn,
+	)
+
+	content := container.NewBorder(
+		widget.NewLabel("选择要使用的账号"),
+		buttons,
+		nil, nil,
+		scrollContainer,
+	)
+
+	d = dialog.NewCustomWithoutButtons("选择保存的账号", content, ls.manager.window)
+	d.Resize(fyne.NewSize(600, 500))
+	d.Show()
+}
+
+// loginWithSavedUser 使用保存的用户信息直接登录
+func (ls *LoginScreen) loginWithSavedUser(user models.SavedUser) {
+	// 设置平台
+	config.SetPlatform(user.Platform)
+
+	// 设置认证信息
+	ls.manager.apiClient.SetAuth(user.Token, user.UserID)
+
+	// 直接跳转到学员选择页面
+	ls.manager.ShowStudentSelection()
+}
+
+// deleteSavedUserFromDialog 从对话框中删除保存的用户
+func (ls *LoginScreen) deleteSavedUserFromDialog(user models.SavedUser, d dialog.Dialog) {
+	dialog.ShowConfirm("确认删除",
+		fmt.Sprintf("确定要删除账号 %s (%s/%s) 吗？", user.Nickname, user.Username, user.Platform),
+		func(confirmed bool) {
+			if confirmed {
+				err := utils.RemoveUser(user)
+				if err != nil {
+					utils.ShowErrorDialog(err, ls.manager.window)
+				} else {
+					utils.ShowInfoDialog("提示", "账号已删除", ls.manager.window)
+					ls.loadSavedUsers() // 重新加载数据
+					// 重新显示对话框
+					d.Dismiss()
+					ls.showSavedUserSelectionDialog()
+				}
+			}
+		},
+		ls.manager.window)
+}
+
 func (ls *LoginScreen) buildUI() {
 	title := widget.NewLabelWithStyle("登录", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
 	platforms := []string{"乐读", "学而思培优"}
-	platformMap := map[string]string{
-		"乐读":    "ledu",
-		"学而思培优": "xes",
-	}
 	ls.platformSelect = widget.NewSelect(platforms, func(selected string) {
-		config.SetPlatform(platformMap[selected])
+		config.SetPlatform(selected)
 	})
 	ls.platformSelect.SetSelected("乐读") // 默认选择乐读
 
@@ -131,6 +265,12 @@ func (ls *LoginScreen) buildUI() {
 	)
 	smsForm.Hide()
 
+	// 保存用户信息复选框
+	ls.saveUserCheck = widget.NewCheck("保存用户信息", func(checked bool) {
+		ls.manager.isSaveUserInfo = checked
+	})
+	ls.saveUserCheck.SetChecked(ls.manager.isSaveUserInfo)
+
 	var switchToSMS, switchToPwd *widget.Button
 
 	switchToSMS = widget.NewButton("短信验证码登录", func() {
@@ -152,6 +292,12 @@ func (ls *LoginScreen) buildUI() {
 	})
 	switchToPwd.Hide() // 初始隐藏短信登录按钮
 
+	// 显示保存用户选择对话框的按钮
+	selectSavedUserButton := widget.NewButton("使用保存的账号", func() {
+		ls.showSavedUserSelectionDialog()
+	})
+	selectSavedUserButton.Importance = widget.MediumImportance
+
 	versionButton := widget.NewButton(constants.Version, func() {
 		ls.showVersionDialog()
 	})
@@ -167,6 +313,7 @@ func (ls *LoginScreen) buildUI() {
 	footer := container.NewHBox(
 		versionButton,
 		layout.NewSpacer(),
+		selectSavedUserButton,
 		loginButton,
 	)
 
@@ -176,6 +323,7 @@ func (ls *LoginScreen) buildUI() {
 		widget.NewSeparator(),
 		container.NewPadded(passwordForm),
 		container.NewPadded(smsForm),
+		container.NewHBox(ls.saveUserCheck),
 		container.NewHBox(layout.NewSpacer(), switchToSMS, switchToPwd, layout.NewSpacer()),
 	)
 
@@ -287,8 +435,30 @@ func (ls *LoginScreen) doLogin() {
 				return
 			}
 
-			ls.manager.authData = authData
 			ls.manager.apiClient.SetAuth(authData.Token, authData.UserID)
+
+			// 如果选择保存用户信息，则保存
+			if ls.manager.isSaveUserInfo {
+				var usernameToSave string
+				if loginMode == "password" {
+					usernameToSave = username
+				} else {
+					usernameToSave = phone
+				}
+
+				err := utils.AddUser(
+					usernameToSave,
+					authData.Nickname,
+					authData.Token,
+					config.PlatformName,
+					authData.UserID,
+				)
+				if err != nil {
+					// 保存失败不影响登录流程，只是显示警告
+					fmt.Printf("保存用户信息失败: %v\n", err)
+				}
+			}
+
 			ls.manager.ShowStudentSelection()
 		})
 	}()

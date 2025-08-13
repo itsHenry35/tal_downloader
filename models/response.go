@@ -9,8 +9,9 @@ type AccountLoginResponse struct {
 }
 
 type AuthFinalResponse struct {
-	Token  string `json:"hb_token"`
-	UserID int    `json:"pu_uid"`
+	Token    string `json:"hb_token"`
+	UserID   int    `json:"pu_uid"`
+	Nickname string `json:"nickname"`
 }
 
 type StudentAccountListResponse []*StudentAccount

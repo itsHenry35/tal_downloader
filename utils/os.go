@@ -20,15 +20,16 @@ func CleanAndroidTempFolder() {
 	_ = os.RemoveAll(GetAndroidSafeFilePath("temp"))
 }
 
+func GetRootPath() string {
+	return fyne.CurrentApp().Storage().RootURI().Path()
+}
+
 func GetAndroidSafeFilePath(relativePath string) string {
 	if !IsAndroid() {
 		return relativePath
 	}
 
-	app := fyne.CurrentApp()
-	// 获取应用的内部存储路径
-	rootPath := app.Storage().RootURI().Path()
-	return filepath.Join(rootPath, relativePath)
+	return filepath.Join(GetRootPath(), relativePath)
 }
 
 func Mkdir(path string) error {

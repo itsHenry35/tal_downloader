@@ -37,6 +37,7 @@ func (c *Client) SetAuth(token, userID string) {
 	}
 }
 
+// returns token, userID
 func (c *Client) GetAuth() (string, string) {
 	return c.token, c.userID
 }

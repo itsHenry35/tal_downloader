@@ -156,8 +156,9 @@ func (c *Client) loginWithStudentId(username, password string) (*models.AuthData
 	}
 
 	authData := models.AuthData{
-		Token:  authResponse.Token,
-		UserID: fmt.Sprint(authResponse.UserID),
+		Token:    authResponse.Token,
+		UserID:   fmt.Sprint(authResponse.UserID),
+		Nickname: authResponse.Nickname,
 	}
 
 	return &authData, nil
@@ -190,8 +191,9 @@ func (c *Client) getFinalAuth(code string) (*models.AuthData, error) {
 	}
 
 	authData := models.AuthData{
-		Token:  authResponse.Token,
-		UserID: fmt.Sprint(authResponse.UserID),
+		Token:    authResponse.Token,
+		UserID:   fmt.Sprint(authResponse.UserID),
+		Nickname: authResponse.Nickname,
 	}
 
 	return &authData, nil

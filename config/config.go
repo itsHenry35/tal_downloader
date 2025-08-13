@@ -38,12 +38,12 @@ var (
 
 func SetPlatform(platform string) {
 	switch platform {
-	case "ledu":
+	case "ledu", "乐读":
 		CourseAPIBase = CourseAPIBase_Ledu
 		ClassroomAPIBase = ClassroomAPIBase_Ledu
 		ClientID = ClientID_Ledu
 		PlatformName = PlatformName_Ledu
-	case "xes":
+	case "xes", "学而思培优":
 		CourseAPIBase = CourseAPIBase_XES
 		ClassroomAPIBase = ClassroomAPIBase_XES
 		ClientID = ClientID_XES

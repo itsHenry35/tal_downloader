@@ -20,7 +20,6 @@ type Manager struct {
 	mainContainer        *fyne.Container
 	apiClient            *api.Client
 	downloader           *downloader.Downloader
-	authData             *models.AuthData
 	selectedCourses      []*models.Course
 	selectedLectures     map[string][]int // courseID -> selected lecture indices
 	downloadPath         string
@@ -28,6 +27,7 @@ type Manager struct {
 	isOverwrite          bool
 	currentScreen        string
 	isConfirmScreenShown bool
+	isSaveUserInfo       bool
 }
 
 func NewManager(window fyne.Window, mainContainer *fyne.Container) *Manager {
@@ -39,6 +39,7 @@ func NewManager(window fyne.Window, mainContainer *fyne.Container) *Manager {
 		selectedLectures:     make(map[string][]int),
 		currentScreen:        "login",
 		isConfirmScreenShown: false,
+		isSaveUserInfo:       false,
 	}
 
 	// 设置安卓返回键处理

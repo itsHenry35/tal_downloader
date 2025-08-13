@@ -1,8 +1,9 @@
 package models
 
 type AuthData struct {
-	Token  string
-	UserID string
+	Token    string
+	UserID   string
+	Nickname string
 }
 
 type Course struct {

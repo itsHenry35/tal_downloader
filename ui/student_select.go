@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 
+	"github.com/itsHenry35/tal_downloader/config"
 	"github.com/itsHenry35/tal_downloader/models"
 	"github.com/itsHenry35/tal_downloader/utils"
 
@@ -49,6 +50,11 @@ func (sl *StudentSelectScreen) loadStudents() {
 
 			sl.studentList = accounts
 
+			// 更新保存用户的昵称信息
+			if sl.manager.isSaveUserInfo {
+				sl.updateSavedUserNicknames(accounts)
+			}
+
 			// 默认选中当前账号
 			_, currentUID := sl.manager.apiClient.GetAuth()
 			defaultIndex := 0
@@ -66,6 +72,47 @@ func (sl *StudentSelectScreen) loadStudents() {
 			sl.radioGroup.Refresh()
 		})
 	}()
+}
+
+// updateSavedUserNicknames 更新保存用户的昵称信息
+func (sl *StudentSelectScreen) updateSavedUserNicknames(accounts models.StudentAccountListResponse) {
+	// 找到当前用户对应的昵称
+	_, currentUID := sl.manager.apiClient.GetAuth()
+	var currentNickname string
+	for _, acc := range accounts {
+		if fmt.Sprint(acc.PuUID) == currentUID {
+			currentNickname = acc.Nickname
+			break
+		}
+	}
+
+	if currentNickname == "" {
+		return
+	}
+
+	// 获取保存的用户数据
+	savedUsersData, err := utils.LoadSavedUsers()
+	if err != nil {
+		return
+	}
+
+	// 查找并更新匹配的用户昵称
+	currentPlatform := config.PlatformName
+	updated := false
+	for i, user := range savedUsersData.Users {
+		if user.Platform == currentPlatform && user.UserID == currentUID {
+			if user.Nickname != currentNickname {
+				savedUsersData.Users[i].Nickname = currentNickname
+				updated = true
+			}
+			break
+		}
+	}
+
+	// 如果有更新，保存数据
+	if updated {
+		utils.SaveUsers(savedUsersData)
+	}
 }
 
 func (sl *StudentSelectScreen) buildUI() {
